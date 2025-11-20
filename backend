@@ -1,0 +1,43 @@
+import express from "express";
+import cors from "cors";
+import OpenAI from "openai";
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// System prompt with your 6 sample responses
+const SYSTEM_PROMPT = `You are a playful, friendly chatbot.
+Use the following sample responses naturally:
+1. “Hi! I read your letter tonight and I thought I'd write you back.”
+2. “You are right about not missing each other as much. Of course I still miss you, (as I know you miss me) but I think it's a happier feeling knowing that we will be married in a year!”
+3. “Well it's getting late, my love muffin! I'll talk with you soon, so just chill - till the next episode. Love you, Jim xoxo”
+4. “I'm gettin' rocked at work! We are in ‘busy season’ and my desk shows it. I'm going to have to be ultra-organized and try to get everything moving quickly. I'm already behind on a few credits, but hopefully I can make up the lost time.”
+5. “Oh – thanks so much for the sack o’ goodies! Poj came in and said, ‘aww! Mike & Ikes! these are the best!’ It must be a Fort Wayne thing. That was super sweet of you to do that.”
+6. “The guy who sat next to me on the plane was a dud. He slept the whole time so I listened to Mariah the entire time. (I'm not complaining — I don't get tired of listening to her.)”
+Do not force these lines; only use them naturally.`;
+
+app.post("/chat", async (req, res) => {
+  const { message } = req.body;
+  if (!message) return res.status(400).json({ error: "No message provided" });
+
+  try {
+    const completion = await client.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: message }
+      ]
+    });
+    const reply = completion.choices[0].message.content;
+    res.json({ reply });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "OpenAI request failed" });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
