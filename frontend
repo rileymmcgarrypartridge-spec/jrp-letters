@@ -1,0 +1,49 @@
+<script>
+const API_URL = "https://<YOUR_BACKEND_RENDER_URL>/chat"; // replace with actual backend URL
+
+async function sendMessage() {
+  const input = document.getElementById("input");
+  const chatbox = document.getElementById("chatbox");
+  const ping = document.getElementById("ping");
+  const userMessage = input.value;
+  if (!userMessage.trim()) return;
+
+  const userBubble = document.createElement('div');
+  userBubble.className = 'bubble user';
+  userBubble.textContent = userMessage;
+  chatbox.appendChild(userBubble);
+  chatbox.scrollTop = chatbox.scrollHeight;
+  input.value = '';
+
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'typing';
+  typingDiv.innerHTML = `<div class='dot'></div><div class='dot'></div><div class='dot'></div>`;
+  chatbox.appendChild(typingDiv);
+  chatbox.scrollTop = chatbox.scrollHeight;
+
+  try {
+    const resp = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: userMessage })
+    });
+    if (!resp.ok) throw new Error(resp.statusText);
+    const data = await resp.json();
+    typingDiv.remove();
+
+    const botBubble = document.createElement('div');
+    botBubble.className = 'bubble bot';
+    botBubble.textContent = data.reply;
+    chatbox.appendChild(botBubble);
+    chatbox.scrollTop = chatbox.scrollHeight;
+    try { await ping.play(); } catch(e) {}
+  } catch(err) {
+    typingDiv.remove();
+    const botBubble = document.createElement('div');
+    botBubble.className = 'bubble bot';
+    botBubble.textContent = 'Error: Backend unreachable.';
+    chatbox.appendChild(botBubble);
+    chatbox.scrollTop = chatbox.scrollHeight;
+  }
+}
+</script>
